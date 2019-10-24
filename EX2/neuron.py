@@ -48,7 +48,7 @@ class Neuron:
         "sign_func",
         "relu_func",
         "leaky_relu_func"]
-    def __init__(self,_input,act_func, weights, learn_rate, expected):
+    def __init__(self,_input,act_func, weights, learn_rate):
         self._input = _input
         self.act_func = act_func
         self.weights = weights
@@ -69,35 +69,35 @@ class Neuron:
             return 1
         else:
             return 0 if s< 0 else 1
-    def sig_func(self,s):
+    def sig_func(self,s,isDerivative):
         base = 1/(1+math.exp(s))
         if(isDerivative):
             return base*(1-base)
         else:
             return base
-    def sin_func(self,s):
+    def sin_func(self,s,isDerivative):
         if(isDerivative):
             return math.cos(s)
         else:
             return math.sin(s)
-    def tanh_func(self,s):
+    def tanh_func(self,s,isDerivative):
         if(isDerivative):
             return 1-(x**2)
         else:
             return math.tanh(s)
-    def sign_func(self,s):
+    def sign_func(self,s,isDerivative):
         result = 1
         if(isDerivative):
             return result
         else:
             result = -1 if s<0  else 1
             return result
-    def relu_func(self,s):
+    def relu_func(self,s,isDerivative):
         if(isDerivative):
             return 1 if s> 0 else 0
         else:
             return s if s> 0 else 0
-    def leaky_relu_func(self,s):
+    def leaky_relu_func(self,s,isDerivative):
         if(isDerivative):
             return 1 if s> 0 else 0.01
         else:
@@ -116,13 +116,50 @@ class Neuron:
         #  ∆wj = η(d−y)f′(wTxj)xj
         delta = real - self.calculateOutput(False) #(d-y)
         fPrime = self.calculateOutput(True) #f'(wTxj)
-        correction = self.learn_rate * delta * fPrime * self._input
+        correction = []
+        for element in self._input:
+            correction.append(self.learn_rate * delta * fPrime * element)
         return correction
 
     def performCorrection(self,real):
         correction = self.calculateCorrection(real)
         w = self.weights
-        self.setWeight(w+correction)
+        for i in range(len(w)):
+            w[i] = w[i] + correction[i]
+        self.setWeight(w)
+
+    def isAccurate(self, side1,side2):
+        self.setInput(side1)
+        result1 = self.calculateOutput(False)
+        self.setInput(side2)
+        result2 = self.calculateOutput(False)
+        #results from different domains should differ
+        #provided groups dont overlap 
+        return result1 != result2
+
+    def train(self, redXY,blueXY, treshold):
+        
+        loops = 0
+        while(True):
+            loops += 1
+            acc = 0
+            for i in range(len(redXY[0])):
+                _side1 = [1,redXY[0][i],redXY[1][i]]
+                _side2 = [1,blueXY[0][i],blueXY[1][i]]
+                self.setInput(_side1)
+                self.performCorrection(redXY[1][i])
+            for i in range(len(redXY[0])):
+                _side1 = [1,redXY[0][i],redXY[1][i]]
+                _side2 = [1,blueXY[0][i],blueXY[1][i]]
+                if self.isAccurate(_side1,_side2): acc+=1
+            if ((loops) > 1000): 
+                print("accuracy: ",acc)
+                print("new w",self.weights)
+                break
+            
+        return loops
+            
+        
 
 #n = Neuron(1,Function.step,1,1,2)
 #print(n.calculateSum())
