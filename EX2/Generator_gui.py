@@ -27,6 +27,7 @@ meanRange = [-5,5]
 covRange = (-2,2)
 neuron = None
 neurPlot = None
+function = "sign_func"
 x = [[],[]]
 y = [[],[]]
 
@@ -55,6 +56,8 @@ def updateNeurPlot():
     neurPlot[0].set_ydata(_y)
 
 def train():
+    global function,neuron
+    neuron.act_func = function
     print("training iter: ",neuron.train([x[RED],y[RED]],[x[BLUE],y[BLUE]],0.5))
 
 def predict(inputTable, ID):
@@ -163,11 +166,12 @@ def initGUI():
     RED_sampleBoxAxis = plt.axes([0.15, 0.11, 0.32, 0.05])
     BLUE_boxAxis = plt.axes([0.61, 0.05, 0.32, 0.05])
     BLUE_sampleBoxAxis = plt.axes([0.61, 0.11, 0.32, 0.05])
-    meanBoxAxis = plt.axes([0.4, 0.17, 0.12, 0.05])
+    meanBoxAxis = plt.axes([0.63, 0.17, 0.12, 0.05])
+    Train_boxAxis = plt.axes([0.15, 0.17, 0.15, 0.05])
     #Button position variables (matplotlib.axes.Axes)
-    Train_axButton = plt.axes([0.15, 0.17, 0.15, 0.05])
+    Train_axButton = plt.axes([0.31, 0.17, 0.1, 0.05])
     Reg_axButton = plt.axes([0.78, 0.17, 0.15, 0.05])
-    Refresh_axButton = plt.axes([0.54, 0.17, 0.15, 0.05])
+    Refresh_axButton = plt.axes([0.43, 0.17, 0.1, 0.05])
     #buttons
     Train_button = Button(Train_axButton, 'Train',color = 'green')
     Reg_button = Button(Reg_axButton, 'Regenerate')
@@ -184,6 +188,7 @@ def initGUI():
     BLUE_textBox.label.set_wrap(True)
     BLUE_sampletextBox = TextBox(BLUE_sampleBoxAxis, 'Samples\nBLUE', initial=str(samples[BLUE]))
     BLUE_sampletextBox.label.set_wrap(True)
+    Train_TextBox = TextBox(Train_boxAxis, 'Func',initial=str(function))
 
     #on_submit event handlers
     RED_textBox.on_submit(lambda value: submitNo(RED,RED_textBox.text))
@@ -191,12 +196,17 @@ def initGUI():
     meantextBox.on_submit(lambda value: submitMean(meantextBox.text))
     RED_sampletextBox.on_submit(lambda value: submitSamples(RED,RED_sampletextBox.text))
     BLUE_sampletextBox.on_submit(lambda value: submitSamples(BLUE,BLUE_sampletextBox.text))
+    Train_TextBox.on_submit(setFunction)
     callback = Index()
     Train_button.on_clicked(callback.training)
     Reg_button.on_clicked(callback.regenerate)
     Refresh_button.on_clicked(callback.refresh)
     plt.show()
     return callback
+
+def setFunction(input_string):
+    global function
+    function = input_string
 
 def submitNo(ID, input_string):
     newNo = 0
@@ -235,7 +245,7 @@ def submitSamples(ID, input_string):
 if __name__ == '__main__':
     initPlots()
     dataClass = [drawPlot(RED),drawPlot(BLUE)]
-    neuron = Neuron([1,1,1],Function.sign,[1,1,1],0.1)
+    neuron = Neuron([1,1,1],function,[1,1,1],0.1)
     neurPlot = drawNeurPlot()
     initGUI()
     plt.show()
