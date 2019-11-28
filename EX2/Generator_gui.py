@@ -22,6 +22,7 @@ color_type = ('ro','bo')
 mean = [[[-5,-5],[5,5]],[[10,10],[-10,-10]]]
 cov = [[[[1, 2], [0.5, 2]],[[1, 2], [0.5, 2]]],[[[1, 0.3], [2, 0.5]],[[1, 2], [5, 6]]]]
 samples = [100,100]
+meshDensity = 200
 dataClass = []
 classesNo = [1,1]
 meanRange = [-5,5]
@@ -32,34 +33,6 @@ grid = None
 function = "tanh_func"
 x = [[],[]]
 y = [[],[]]
-
-def mapCurrentView():
-    xLim = ax.get_xlim()
-    yLim = ax.get_ylim()
-    _x = np.linspace(xLim[0], xLim[1], 200) 
-    _y = np.linspace(yLim[0], yLim[1], 200) 
-    x_1,y_1 =  np.meshgrid(_x, _y)
-    return [x_1,y_1]
-
-def neuralValorisation(_map):
-    values = copy.deepcopy(_map[0])
-    for i in range(200):
-        for j in range(200):
-            table = [1,_map[0][i,j],_map[1][i,j]]
-            neuron.setInput(table)
-            values[i,j] = (neuron.calculateOutput(False))
-    return values
-
-def drawFieldDiv():
-##TODO REfactor for meshgrid
-    global grid,colorbar
-    if(grid != None and colorbar == None):
-        del grid
-        colorbar = fig.colorbar(plt.cm.ScalarMappable( cmap='jet'), ax=ax)
-    _map = mapCurrentView()
-    grid = ax.pcolormesh(_map[0],_map[1],neuralValorisation(_map),cmap='jet',alpha = 0.1)
-    
-
 
 def train():
     global function,neuron
@@ -111,15 +84,32 @@ def randomCov(_min,_max):
     covariance = [[_x[0],_x[1]],[_y[0],_y[1]]]
     return covariance
 
+def mapCurrentView():
+    xLim = ax.get_xlim()
+    yLim = ax.get_ylim()
+    _x = np.linspace(xLim[0], xLim[1], meshDensity) 
+    _y = np.linspace(yLim[0], yLim[1], meshDensity) 
+    x_1,y_1 =  np.meshgrid(_x, _y)
+    return [x_1,y_1]
+
+def neuralValorisation(_map):
+    values = copy.deepcopy(_map[0])
+    for i in range(meshDensity):
+        for j in range(meshDensity):
+            table = [1,_map[0][i,j],_map[1][i,j]]
+            neuron.setInput(table)
+            values[i,j] = (neuron.calculateOutput(False))
+    return values
+
+def drawFieldDiv():
+    global grid,colorbar
+    if(grid != None):
+        del grid
+    _map = mapCurrentView()
+    grid = ax.pcolormesh(_map[0],_map[1],neuralValorisation(_map),cmap='jet',alpha = 0.1)
+
 def plotDataUpdate(ID):
-    global classesNo,plotFill
-    global mean
-    global cov
-    global samples
-    global dataClass
-    global neurPlot
-    global neuron
-    global x,y
+    global classesNo,plotFill,mean,cov,samples,dataClass, neurPlot,neuron,x,y
     try:
         x.pop(ID)
         x.insert(ID,[])
@@ -143,6 +133,7 @@ def plotUpdate():
     ax.relim()
     ax.autoscale_view()
     plt.draw()
+    
 
 def initPlots():
     global fig,ax
@@ -150,10 +141,11 @@ def initPlots():
     fig, ax = plt.subplots()
     plt.subplots_adjust(bottom=0.29)
     plt.autoscale(enable=True, axis='both', tight=True)
+    fig.colorbar(plt.cm.ScalarMappable( cmap='jet'), ax=ax)
     initsRegenerate(RED)
     initsRegenerate(BLUE)
     return fig,ax
-    
+
 class Index(object):
     ind = 0
     
@@ -172,7 +164,6 @@ class Index(object):
         plotUpdate()
         self.ind -=10
         
-
 def initGUI():
     #TextBox position variables (matplotlib.axes.Axes)
     RED_boxAxis = plt.axes([0.15, 0.05, 0.32, 0.05])
@@ -214,6 +205,7 @@ def initGUI():
     Train_button.on_clicked(callback.training)
     Refresh_button.on_clicked(callback.refresh)
     Reg_button.on_clicked(callback.regenerate)
+
     plt.show()
     return callback
 
