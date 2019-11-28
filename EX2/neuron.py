@@ -18,34 +18,8 @@ for the jth sample
 '''
 import math
 import numpy as np
-import functools
-from enum import IntEnum
-
-class Function(IntEnum):
-    step = 0
-    sig = 1
-    sin = 2
-    tanh = 3
-    sign = 4
-    relu = 5
-    leaky = 6
-'''
-class X:
-    def a():
-        print("a worked!")
-    def b(self):
-        print("b worked!")
-    def c(self, s):
-        getattr(self,s)()
-    def d(s):
-        getattr(X,s)()
-'''
-
-
 
 class Neuron:
-
-
     def __init__(self,_input,act_func, weights, learn_rate):
         self._input = _input
         self.act_func = act_func
@@ -64,13 +38,12 @@ class Neuron:
         self.act_func = new_func
 
     #neuron functions
-    
-
     def step_func(s,isDerivative):
         if(isDerivative):
             return 1
         else:
             return 0 if s< 0 else 1
+
     def sig_func(s,isDerivative):
         base = 1/(1+math.exp(s))
         if(isDerivative):
@@ -83,11 +56,13 @@ class Neuron:
             return math.cos(s)
         else:
             return math.sin(s)
+
     def tanh_func(s,isDerivative):
         if(isDerivative):
             return 1-(math.tanh(s)**2)
         else:
             return math.tanh(s)
+
     def sign_func(s,isDerivative):
         result = 1
         if(isDerivative):
@@ -95,11 +70,13 @@ class Neuron:
         else:
             result = -1 if s<0  else 1
             return result
+
     def relu_func(s,isDerivative):
         if(isDerivative):
             return 1 if s> 0 else 0
         else:
             return s if s> 0 else 0
+
     def leaky_relu_func(s,isDerivative):
         if(isDerivative):
             return 1 if s> 0 else 0.01
@@ -112,7 +89,6 @@ class Neuron:
         "sin_func":sin_func,
         "tanh_func":tanh_func,
         "sign_func":sign_func,
-        "sign_func":sign_func,
         "relu_func":relu_func,
         "leaky_func":leaky_relu_func
     }
@@ -121,17 +97,12 @@ class Neuron:
         return np.dot(self._input,self.weights)
 
     def calculateValue(self,isDerivative,val):
-        #print (self.act_func, "  <given  is> ",Neuron.Functions['step_func'].__name__)
         out = Neuron.Functions[self.act_func](val,isDerivative)
         return out
 
     def calculateOutput(self,isDerivative):
         s = self.calculateSum() + self.weights[0]
-        #print("functions", Neuron.Functions)
-        #print (self.act_func, "  <given  is> ",Neuron.Functions['step_func'].__name__)
-
         out = Neuron.Functions[self.act_func](s,isDerivative)
-        
         return out
 
     def calculateCorrection(self,real):
@@ -141,6 +112,7 @@ class Neuron:
         correction = []
         for element in self._input:
             correction.append(self.learn_rate * delta * fPrime * element)
+        #returns table of ∆wj-corrections per weight
         return correction
 
     def performCorrection(self,real):
@@ -149,18 +121,26 @@ class Neuron:
         for i in range(len(w)):
             w[i] += correction[i]
         self.setWeight(w)
-
+        
+    def getRealValue(self,isDataCorrect):
+        if self.act_func == ("step_func")\
+            or self.act_func == ("sig_func")\
+            or self.act_func == ("sin_func")\
+            or self.act_func == ("relu_func")\
+            or self.act_func == ("leaky_func"):
+            return 1 if isDataCorrect else 0
+        elif self.act_func == ("tanh_func")\
+            or self.act_func == ("sign_func"):
+            return 1 if isDataCorrect else -1
+        
     def isAccurate(self, side1,side2):
         self.setInput(side1)
         result1 = self.calculateOutput(False)
         self.setInput(side2)
         result2 = self.calculateOutput(False)
-        #results from different domains should differ
-        #provided groups dont overlap 
-        return result1 != result2
+        return result1 > result2
 
     def train(self, redXY,blueXY, treshold):
-        
         loops = 0
         while(True):
             loops += 1
@@ -169,12 +149,12 @@ class Neuron:
                 _side1 = [1,redXY[0][i],redXY[1][i]]
                 _side2 = [1,blueXY[0][i],blueXY[1][i]]
                 self.setInput(_side1)
-                self.performCorrection(blueXY[1][i])
+                self.performCorrection(self.getRealValue(True))
+                self.setInput(_side2)
+                self.performCorrection(self.getRealValue(False))
                 if self.isAccurate(_side1,_side2): acc+=1
-                
-            if ((loops) > 1000): 
+            if ((loops) > 1000) or (acc == 100): 
                 print("accuracy: ",acc,"  on: ",self.act_func)
                 print("new w",self.weights)
                 break
-            
         return loops
