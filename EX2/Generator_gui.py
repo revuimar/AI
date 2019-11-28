@@ -12,6 +12,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.widgets import TextBox,Button
 import itertools
+import copy
 from neuron import *
 
 fig, ax = [],[]
@@ -26,34 +27,39 @@ classesNo = [1,1]
 meanRange = [-5,5]
 covRange = (-2,2)
 neuron = None
-neurPlot = None
-function = "sign_func"
+colorbar = None
+grid = None
+function = "tanh_func"
 x = [[],[]]
 y = [[],[]]
 
-def drawNeurPlot():
-    # w1x1 + w2x2 + w0 = 0
-    # (-w1/w2)x1 - w0/w2 = x2
-    # y
-    w = neuron.weights
-    a = (-1)*(w[1]/w[2])
-    b = (-1)*(w[0]/w[2])
-    lims = ax.get_xlim()
-    _x = [lims[0],lims[1]]
-    _y = [a*_x[0] + b,a*_x[1] +b]
-    return plt.plot(_x,_y,"-g")
-     
-def updateNeurPlot():
-    global neurPlot
-    w = neuron.weights
-    a = (-1)*(w[1]/w[2])
-    b = (-1)*(w[0]/w[2])
-    lims = ax.get_xlim()
-    _x = [lims[0],lims[1]]
-    _y = [a*_x[0] + b,a*_x[1] +b]
-    print
-    neurPlot[0].set_xdata(_x)
-    neurPlot[0].set_ydata(_y)
+def mapCurrentView():
+    xLim = ax.get_xlim()
+    yLim = ax.get_ylim()
+    _x = np.linspace(xLim[0], xLim[1], 200) 
+    _y = np.linspace(yLim[0], yLim[1], 200) 
+    x_1,y_1 =  np.meshgrid(_x, _y)
+    return [x_1,y_1]
+
+def neuralValorisation(_map):
+    values = copy.deepcopy(_map[0])
+    for i in range(200):
+        for j in range(200):
+            table = [1,_map[0][i,j],_map[1][i,j]]
+            neuron.setInput(table)
+            values[i,j] = (neuron.calculateOutput(False))
+    return values
+
+def drawFieldDiv():
+##TODO REfactor for meshgrid
+    global grid,colorbar
+    if(grid != None and colorbar == None):
+        del grid
+        colorbar = fig.colorbar(plt.cm.ScalarMappable( cmap='jet'), ax=ax)
+    _map = mapCurrentView()
+    grid = ax.pcolormesh(_map[0],_map[1],neuralValorisation(_map),cmap='jet',alpha = 0.1)
+    
+
 
 def train():
     global function,neuron
@@ -77,7 +83,10 @@ def drawPlot(ID):
         _x,_y = np.random.multivariate_normal(mean[ID][i], cov[ID][i], samples[ID]).T
         x[ID].extend(_x)
         y[ID].extend(_y)
-    return plt.plot(x[ID], y[ID], color_type[ID])
+    return ax.plot(x[ID], y[ID], color_type[ID])
+
+def redraw(ID):
+    return ax.plot(x[ID], y[ID], color_type[ID])
 
 def initsRegenerate(ID):
     global mean
@@ -103,7 +112,7 @@ def randomCov(_min,_max):
     return covariance
 
 def plotDataUpdate(ID):
-    global classesNo
+    global classesNo,plotFill
     global mean
     global cov
     global samples
@@ -124,13 +133,16 @@ def plotDataUpdate(ID):
         print("Incorrect data input!")
     dataClass[ID][0].set_xdata(x[ID])
     dataClass[ID][0].set_ydata(y[ID])
-    ax.relim()
-    ax.autoscale_view()
-    updateNeurPlot()
-    plt.draw()
     
 
-
+def plotUpdate():
+    ax.cla()
+    redraw(RED)
+    redraw(BLUE)
+    drawFieldDiv()
+    ax.relim()
+    ax.autoscale_view()
+    plt.draw()
 
 def initPlots():
     global fig,ax
@@ -144,6 +156,7 @@ def initPlots():
     
 class Index(object):
     ind = 0
+    
     def regenerate(self,event):
         self.ind +=1
         neuron.setWeight([1,1,1])
@@ -151,12 +164,12 @@ class Index(object):
         initsRegenerate(BLUE)
         plotDataUpdate(RED)
         plotDataUpdate(BLUE)
+        plotUpdate()
     def training(self,event):
         self.ind -=1
         train()
     def refresh(self,event):
-        updateNeurPlot()
-        plt.draw()
+        plotUpdate()
         self.ind -=10
         
 
@@ -199,8 +212,8 @@ def initGUI():
     Train_TextBox.on_submit(setFunction)
     callback = Index()
     Train_button.on_clicked(callback.training)
-    Reg_button.on_clicked(callback.regenerate)
     Refresh_button.on_clicked(callback.refresh)
+    Reg_button.on_clicked(callback.regenerate)
     plt.show()
     return callback
 
@@ -246,7 +259,7 @@ if __name__ == '__main__':
     initPlots()
     dataClass = [drawPlot(RED),drawPlot(BLUE)]
     neuron = Neuron([1,1,1],function,[1,1,1],0.1)
-    neurPlot = drawNeurPlot()
+    drawFieldDiv()
     initGUI()
     plt.show()
 
