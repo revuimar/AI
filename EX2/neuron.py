@@ -27,7 +27,13 @@ class Neuron:
         self.learn_rate = learn_rate
     
     def setInput(self,_input):
-        self._input = _input
+        i_2 = 0
+        for i in range(len(self._input)):
+            if i == 0: 
+                continue
+            else: 
+                self._input[i] = _input[i_2]
+            i_2 += 1
     
     def setWeight(self,weights):
         self.weights = weights
@@ -146,8 +152,8 @@ class Neuron:
             loops += 1
             acc = 0
             for i in range(len(redXY[0])):
-                _side1 = [1,redXY[0][i],redXY[1][i]]
-                _side2 = [1,blueXY[0][i],blueXY[1][i]]
+                _side1 = [redXY[0][i],redXY[1][i]]
+                _side2 = [blueXY[0][i],blueXY[1][i]]
                 self.setInput(_side1)
                 self.performCorrection(self.getRealValue(True))
                 self.setInput(_side2)

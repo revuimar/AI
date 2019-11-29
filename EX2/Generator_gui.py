@@ -96,7 +96,7 @@ def neuralValorisation(_map):
     values = copy.deepcopy(_map[0])
     for i in range(meshDensity):
         for j in range(meshDensity):
-            table = [1,_map[0][i,j],_map[1][i,j]]
+            table = [_map[0][i,j],_map[1][i,j]]
             neuron.setInput(table)
             values[i,j] = (neuron.calculateOutput(False))
     return values
