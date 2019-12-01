@@ -27,7 +27,13 @@ class Neuron:
         self.learn_rate = learn_rate
     
     def setInput(self,_input):
-        self._input = _input
+        i_2 = 0
+        for i in range(len(self._input)):
+            if i == 0: 
+                continue
+            else: 
+                self._input[i] = _input[i_2]
+            i_2 += 1
     
     def setWeight(self,weights):
         self.weights = weights
@@ -105,32 +111,34 @@ class Neuron:
         out = Neuron.Functions[self.act_func](s,isDerivative)
         return out
 
-    def calculateCorrection(self,real):
+    def calculateError(self,real):
+        return real - self.calculateOutput(False)#(d-y)
+
+    def calculateCorrection(self,error):
         #  ∆wj = η(d−y)f′(wTxj)xj
-        delta = real - self.calculateOutput(False) #(d-y)
         fPrime = self.calculateOutput(True) #f'(wTxj)
         correction = []
         for element in self._input:
-            correction.append(self.learn_rate * delta * fPrime * element)
+            correction.append(self.learn_rate * error * fPrime * element)
         #returns table of ∆wj-corrections per weight
         return correction
 
-    def performCorrection(self,real):
-        correction = self.calculateCorrection(real)
+    def performCorrection(self,error):
+        correction = self.calculateCorrection(error)
         w = self.weights
         for i in range(len(w)):
             w[i] += correction[i]
         self.setWeight(w)
         
-    def getRealValue(self,isDataCorrect):
-        if self.act_func == ("step_func")\
-            or self.act_func == ("sig_func")\
-            or self.act_func == ("sin_func")\
-            or self.act_func == ("relu_func")\
-            or self.act_func == ("leaky_func"):
+    def getRealValue(isDataCorrect,function):
+        if function == ("step_func")\
+            or function == ("sig_func")\
+            or function == ("sin_func")\
+            or function == ("relu_func")\
+            or function == ("leaky_func"):
             return 1 if isDataCorrect else 0
-        elif self.act_func == ("tanh_func")\
-            or self.act_func == ("sign_func"):
+        elif function == ("tanh_func")\
+            or function == ("sign_func"):
             return 1 if isDataCorrect else -1
         
     def isAccurate(self, side1,side2):
@@ -146,12 +154,14 @@ class Neuron:
             loops += 1
             acc = 0
             for i in range(len(redXY[0])):
-                _side1 = [1,redXY[0][i],redXY[1][i]]
-                _side2 = [1,blueXY[0][i],blueXY[1][i]]
+                _side1 = [redXY[0][i],redXY[1][i]]
+                _side2 = [blueXY[0][i],blueXY[1][i]]
                 self.setInput(_side1)
-                self.performCorrection(self.getRealValue(True))
+                real = Neuron.getRealValue(True,self.act_func)
+                self.performCorrection(self.calculateError(real))
                 self.setInput(_side2)
-                self.performCorrection(self.getRealValue(False))
+                real = Neuron.getRealValue(False,self.act_func)
+                self.performCorrection(self.calculateError(real))
                 if self.isAccurate(_side1,_side2): acc+=1
             if ((loops) > 1000) or (acc == 100): 
                 print("accuracy: ",acc,"  on: ",self.act_func)

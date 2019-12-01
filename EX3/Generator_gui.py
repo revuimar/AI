@@ -13,7 +13,7 @@ import numpy as np
 from matplotlib.widgets import TextBox,Button
 import itertools
 import copy
-from neuron import *
+from neuralnetwork import *
 
 fig, ax = [],[]
 RED = 0
@@ -24,26 +24,20 @@ cov = [[[[1, 2], [0.5, 2]],[[1, 2], [0.5, 2]]],[[[1, 0.3], [2, 0.5]],[[1, 2], [5
 samples = [100,100]
 meshDensity = 200
 dataClass = []
-classesNo = [1,1]
-meanRange = [-5,5]
+classesNo = [2,2]
+meanRange = [-20,20]
 covRange = (-2,2)
-neuron = None
+neuralNetwork = None
 colorbar = None
 grid = None
-function = "tanh_func"
+function = "sig_func"
 x = [[],[]]
 y = [[],[]]
 
 def train():
-    global function,neuron
-    neuron.act_func = function
-    print("training iter: ",neuron.train([x[RED],y[RED]],[x[BLUE],y[BLUE]],0.5))
-
-def predict(inputTable, ID):
-    neuron.setInput(inputTable)
-    return neuron.calculateOutput(True)
+    global neuralNetwork,x,y
+    print("training iter: ",neuralNetwork.train([x[RED],y[RED]],[x[BLUE],y[BLUE]]))
     
-
 def drawPlot(ID):
     global mean
     global cov
@@ -96,9 +90,23 @@ def neuralValorisation(_map):
     values = copy.deepcopy(_map[0])
     for i in range(meshDensity):
         for j in range(meshDensity):
-            table = [1,_map[0][i,j],_map[1][i,j]]
-            neuron.setInput(table)
-            values[i,j] = (neuron.calculateOutput(False))
+            table = [_map[0][i,j],_map[1][i,j]]
+            outputTable = neuralNetwork.getNetworkOutput(table)
+            #print(outputTable)
+            if(outputTable[0] > 0.8 and outputTable[1] > 0.8):
+                values[i,j] = outputTable[0]
+            if(outputTable[0] >0.8 and outputTable[1] < 0.2):
+                values[i,j] = outputTable[1]
+            if(outputTable[0] < 0.2 and outputTable[1] > 0.8):
+                values[i,j] = outputTable[0]
+            if(outputTable[0] < 0.2 and outputTable[1] < 0.2):
+                values[i,j] = outputTable[0]
+            '''
+            if(outputTable[0] == outputTable[1]):
+                values[i,j] = outputTable[0]
+            else:
+                values[i,j] = 0.5
+            '''
     return values
 
 def drawFieldDiv():
@@ -148,10 +156,11 @@ def initPlots():
 
 class Index(object):
     ind = 0
-    
     def regenerate(self,event):
+        global neuralNetwork
         self.ind +=1
-        neuron.setWeight([1,1,1])
+        del neuralNetwork
+        neuralNetwork = NeuralNetwork([2,3,2],function,0.5)
         initsRegenerate(RED)
         initsRegenerate(BLUE)
         plotDataUpdate(RED)
@@ -250,7 +259,7 @@ def submitSamples(ID, input_string):
 if __name__ == '__main__':
     initPlots()
     dataClass = [drawPlot(RED),drawPlot(BLUE)]
-    neuron = Neuron([1,1,1],function,[1,1,1],0.1)
+    neuralNetwork = NeuralNetwork([2,3,2],function,0.5)#Neuron([1,1,1],function,[1,1,1],0.1)
     drawFieldDiv()
     initGUI()
     plt.show()
