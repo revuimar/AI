@@ -169,10 +169,12 @@ class Index(object):
         
 def initGUI():
     #TextBox position variables (matplotlib.axes.Axes)
-    RED_boxAxis = plt.axes([0.15, 0.05, 0.32, 0.05])
-    RED_sampleBoxAxis = plt.axes([0.15, 0.11, 0.32, 0.05])
-    BLUE_boxAxis = plt.axes([0.61, 0.05, 0.32, 0.05])
-    BLUE_sampleBoxAxis = plt.axes([0.61, 0.11, 0.32, 0.05])
+    RED_boxAxis = plt.axes([0.55, 0.05, 0.15, 0.05])
+    RED_sampleBoxAxis = plt.axes([0.55, 0.11, 0.15, 0.05])
+    BLUE_boxAxis = plt.axes([0.81, 0.05, 0.12, 0.05])
+    BLUE_sampleBoxAxis = plt.axes([0.81, 0.11, 0.12, 0.05])
+    Funcpattern_boxAxis = plt.axes([0.15, 0.05, 0.30, 0.05])
+    Network_boxAxis = plt.axes([0.15, 0.11, 0.15, 0.05])
     meanBoxAxis = plt.axes([0.63, 0.17, 0.12, 0.05])
     Train_boxAxis = plt.axes([0.15, 0.17, 0.15, 0.05])
     #Button position variables (matplotlib.axes.Axes)
@@ -196,6 +198,9 @@ def initGUI():
     BLUE_sampletextBox = TextBox(BLUE_sampleBoxAxis, 'Samples\nBLUE', initial=str(samples[BLUE]))
     BLUE_sampletextBox.label.set_wrap(True)
     Train_TextBox = TextBox(Train_boxAxis, 'Func',initial=str(function))
+    Funcpatt_TextBox = TextBox(Funcpattern_boxAxis, 'Funcion\nPattern',initial=str(functionTable))
+    Network_TextBox = TextBox(Network_boxAxis, 'Network\nPattern',initial=str(layerCombo))
+
 
     #on_submit event handlers
     RED_textBox.on_submit(lambda value: submitNo(RED,RED_textBox.text))
