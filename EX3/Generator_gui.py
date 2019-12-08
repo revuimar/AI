@@ -22,7 +22,7 @@ color_type = ('ro','bo')
 mean = [[[-5,-5],[5,5]],[[10,10],[-10,-10]]]
 cov = [[[[1, 2], [0.5, 2]],[[1, 2], [0.5, 2]]],[[[1, 0.3], [2, 0.5]],[[1, 2], [5, 6]]]]
 samples = [100,100]
-meshDensity = 200
+meshDensity = 10
 dataClass = []
 classesNo = [2,2]
 meanRange = [-20,20]
@@ -30,7 +30,9 @@ covRange = (-2,2)
 neuralNetwork = None
 colorbar = None
 grid = None
-function = "sig_func"
+function = "sin_func"
+functionTable = ["sig_func","tanh_func","tanh_func"]
+layerCombo = [2,3,2]
 x = [[],[]]
 y = [[],[]]
 
@@ -65,7 +67,6 @@ def initsRegenerate(ID):
     for i in range(classesNo[ID]):
         mean[ID].insert(i,randomMultivariateMean(meanRange[0],meanRange[1]))
         cov[ID].insert(i,randomCov(covRange[0],covRange[1]))
-    
 
 def randomMultivariateMean(_min,_max):
     newmean = np.random.uniform(_min,_max,2)
@@ -93,14 +94,7 @@ def neuralValorisation(_map):
             table = [_map[0][i,j],_map[1][i,j]]
             outputTable = neuralNetwork.getNetworkOutput(table)
             #print(outputTable)
-            if(outputTable[0] > 0.8 and outputTable[1] > 0.8):
-                values[i,j] = outputTable[0]
-            if(outputTable[0] >0.8 and outputTable[1] < 0.2):
-                values[i,j] = outputTable[1]
-            if(outputTable[0] < 0.2 and outputTable[1] > 0.8):
-                values[i,j] = outputTable[0]
-            if(outputTable[0] < 0.2 and outputTable[1] < 0.2):
-                values[i,j] = outputTable[0]
+            values[i,j] = outputTable[1]
             '''
             if(outputTable[0] == outputTable[1]):
                 values[i,j] = outputTable[0]
@@ -160,7 +154,7 @@ class Index(object):
         global neuralNetwork
         self.ind +=1
         del neuralNetwork
-        neuralNetwork = NeuralNetwork([2,3,2],function,0.5)
+        neuralNetwork = NeuralNetwork([2,3,2],functionTable,2)
         initsRegenerate(RED)
         initsRegenerate(BLUE)
         plotDataUpdate(RED)
@@ -259,7 +253,8 @@ def submitSamples(ID, input_string):
 if __name__ == '__main__':
     initPlots()
     dataClass = [drawPlot(RED),drawPlot(BLUE)]
-    neuralNetwork = NeuralNetwork([2,3,2],function,0.5)#Neuron([1,1,1],function,[1,1,1],0.1)
+    neuralNetwork = NeuralNetwork([2,3,2],functionTable,2)
+    #Neuron([1,1,1],function,[1,1,1],0.1)
     drawFieldDiv()
     initGUI()
     plt.show()
