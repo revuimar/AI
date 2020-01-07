@@ -21,19 +21,13 @@ import numpy as np
 
 class Neuron:
     def __init__(self,_input,act_func, weights, learn_rate):
-        self._input = _input
+        self.inputs = _input
         self.act_func = act_func
         self.weights = weights
         self.learn_rate = learn_rate
     
     def setInput(self,_input):
-        i_2 = 0
-        for i in range(len(self._input)):
-            if i == 0: 
-                continue
-            else: 
-                self._input[i] = _input[i_2]
-            i_2 += 1
+        self.inputs = _input
     
     def setWeight(self,weights):
         self.weights = weights
@@ -51,7 +45,7 @@ class Neuron:
             return 0 if s< 0 else 1
 
     def sig_func(s,isDerivative):
-        base = 1/(1+math.exp(s))
+        base = 1/(1+math.exp(-s))
         if(isDerivative):
             return base*(1-base)
         else:
@@ -85,9 +79,9 @@ class Neuron:
 
     def leaky_relu_func(s,isDerivative):
         if(isDerivative):
-            return 1 if s> 0 else 0.01
+            return 1 if s> 0 else 0.05
         else:
-            return s if s> 0 else 0.01*s
+            return s if s> 0 else (0.05 if s<0.0001 else 0.05*s)
 
     Functions = {
         "step_func": step_func,
@@ -100,7 +94,8 @@ class Neuron:
     }
 
     def calculateSum(self):
-        return np.dot(self._input,self.weights)
+        _sum = np.dot(self.inputs,self.weights[1:])
+        return _sum
 
     def calculateValue(self,isDerivative,val):
         out = Neuron.Functions[self.act_func](val,isDerivative)
@@ -112,14 +107,15 @@ class Neuron:
         return out
 
     def calculateError(self,real):
-        return real - self.calculateOutput(False)#(d-y)
+        return (real - self.calculateOutput(False))#(d-y)
 
     def calculateCorrection(self,error):
         #  ∆wj = η(d−y)f′(wTxj)xj
         fPrime = self.calculateOutput(True) #f'(wTxj)
         correction = []
-        for element in self._input:
-            correction.append(self.learn_rate * error * fPrime * element)
+        correction.append(self.learn_rate * error * self.calculateOutput(True) * 1.0)#for bias
+        for element in self.inputs:
+            correction.append(self.learn_rate * error * self.calculateOutput(True) * element)
         #returns table of ∆wj-corrections per weight
         return correction
 

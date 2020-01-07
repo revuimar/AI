@@ -4,32 +4,40 @@ from neuron import *
 import random
 
 class NeuralNetwork:
-    def __init__(self,neuronTable,functionTable, learn_rate):
+    
+    def __init__(self,noInputs,neuronTable,functionTable, learn_rate):
+        '''
+                    /-0-\         -> first appended neuron node
+        x\  /-0-\  /     \  /--0    numer of inputs and weights determined 
+          --     -----1-----        from number of nodes from previous layer
+        y/  \-1-/  \     /  \--1  
+                    \-2-/         -> last appended neuron node
+       layers 0-------1--------2
+       resulting table: [[N0,N1],[N0,N1,N2],[N0,N1]]
+        interpret output as one hot!!!
+        2 cases one gave to be '0' other has to be '1'!!
+        '''
         self.neuronTable = neuronTable
         self.learn_rate = learn_rate
         self.functionTable = functionTable
         self.network = []
+        np.seterr('raise')
         print(range(len(neuronTable)))
         for layer in range(len(neuronTable)):
             self.network.append([])
-            print(self.network)
             for node in range(neuronTable[layer]):
                 if(layer == 0):
-                    self.network[layer].append(Neuron([random.uniform(1,2),random.uniform(1,2),random.uniform(1,2)],functionTable[layer],[random.uniform(1,2),random.uniform(1,2),random.uniform(1,2)],learn_rate))
+                    w = [random.uniform(0,1) for i in range(noInputs+1)]
+                    inp = [1 for i in range(noInputs)]
+                    print("generated layer ",layer," branch: ",w,inp)
+                    self.network[layer].append(Neuron(inp,functionTable[layer],w,learn_rate))
                 else:
-                    stuff = [random.uniform(1,2) for i in range(neuronTable[layer-1]+1)]
-                    self.network[layer].append(Neuron(stuff,functionTable[layer],stuff,learn_rate))
-    '''
-                /-0-\         -> first appended neuron node
-    x\  /-0-\  /     \  /--0    numer of inputs and weights determined 
-      --     -----1-----        from number of nodes from previous layer
-    y/  \-1-/  \     /  \--1  
-                \-2-/         -> last appended neuron node
-   layers 0-------1--------2
-   resulting table: [[N0,N1],[N0,N1,N2],[N0,N1]]
-    interpret output as one hot!!!
-    2 cases one gave to be '0' other has to be '1'!!
-    '''
+                    w = [random.uniform(0,1) for i in range(neuronTable[layer-1]+1)]
+                    inp = [1 for i in range(neuronTable[layer-1])]
+                    print("generated ",layer," branch: ",w,inp)
+                    self.network[layer].append(Neuron(inp,functionTable[layer],w,learn_rate))
+        print(self.network)
+
     def setNetworkInput(self,inputTable):
         self.setLayerInputs(inputTable,0)
 
@@ -66,6 +74,7 @@ class NeuralNetwork:
                 continue
             self.setLayerInputs(_outTable,layer)
             _outTable = self.getLayerOutputs(layer)
+            #print("for layer: ",layer," outputs: ",_outTable)
     
     def getLayerSums(self,layer):
         _sums = []
@@ -111,7 +120,7 @@ class NeuralNetwork:
                     _currentErr.append(node.calculateError(reals[i]))#append node error to list (used by lower layer) 
                     i=+1
                 #self.performLayerCorrection(layer,_currentErr) # perform correction - it does not affect calculation(well it does)
-                _errors.append(_currentErr)
+                _errors.insert(0,_currentErr)
                 _previousErr = _currentErr # previous error for backpropagated calculation of errors of lower nodes
                 _currentErr = []
                 layer -= 1
@@ -126,15 +135,18 @@ class NeuralNetwork:
                     _nodeError_i += W_ij * derFunc * delta_j # sum throug all j nodes
                 _currentErr.append(_nodeError_i)
                 #self.network[layer][i].performCorrection(_currentErr[i])
-            _errors.append(_currentErr)
+            _errors.insert(0,_currentErr)
             _previousErr = _currentErr
             _currentErr = []
             layer -= 1
+        #print("errors  ",_errors)
         return _errors
 
     def performNetworkCorrection(self,errors):
         #errors are in reverse layer order - from top to bottom
         layer = len(self.network) - 1#start from last layer
+        #kek = errors.reverse()
+        #print(errors)
         while(layer >= 0):
             for i in range(len(self.network[layer])):
                 self.network[layer][i].performCorrection(errors[layer][i])
@@ -152,7 +164,7 @@ class NeuralNetwork:
                 print("layer: ",layer,"node: ",i," -> ",node.weights)
                 i+=1
 
-    def train(self,redXY,bluXY):
+    def train(self,redXY,bluXY,epochs):
         redCount = len(redXY[0])
         bluCount = len(bluXY[0])
         loops = 0
@@ -160,21 +172,27 @@ class NeuralNetwork:
             #one-hot
             for i in range(redCount):
                 self.setNetworkInput([redXY[0][i],redXY[1][i]])
-                _reals = NeuralNetwork.getRealValue(self.functionTable[-1],[True,False])
+                _reals = [Neuron.getRealValue(True,self.functionTable[-1]) for i in range(len(self.network[-1]))] #NeuralNetwork.getRealValue(self.functionTable[-1],[True,False])
+                _reals[-1] = Neuron.getRealValue(False,self.functionTable[-1])
+                #_reals = [Neuron.getRealValue(True,self.functionTable[-1])]
                 _errors = self.backPropagate(_reals)
                 #print(_errors)
                 self.performNetworkCorrection(_errors)
-                #print("output: ", self.getNetworkOutput([redXY[0][i],redXY[1][i]]),"  REALS: ",_reals)
+                #print("output: ", self.getNetworkOutput([redXY[0][i],redXY[1][i]]))#,"  REALS: ",_reals)
+            
             for i in range(bluCount):
                 self.setNetworkInput([bluXY[0][i],bluXY[1][i]])
-                _reals = NeuralNetwork.getRealValue(self.functionTable[-1],[False,True])
+                __reals = [Neuron.getRealValue(True,self.functionTable[-1]) for i in range(len(self.network[-1]))] #NeuralNetwork.getRealValue(self.functionTable[-1],[True,False])
+                _reals[0] = Neuron.getRealValue(False,self.functionTable[-1])
+                #_reals = [Neuron.getRealValue(False,self.functionTable[-1])]
                 _errors = self.backPropagate(_reals)
                 self.performNetworkCorrection(_errors)
-                #print("output: ", self.getNetworkOutput([bluXY[0][i],bluXY[1][i]]),"  REALS: ",_reals)
-            if(loops > 1000): break
+                #print("output: ", self.getNetworkOutput([bluXY[0][i],bluXY[1][i]]))#,"  REALS: ",_reals)
+            
+            if(loops > epochs): break
             loops +=1
         self.printWeights()
-        print("RED:", self.getNetworkOutput([redXY[0][12],redXY[1][12]]))
-        print("BLUE:", self.getNetworkOutput([bluXY[0][12],bluXY[1][12]]))
-    #todo Training, backpropagation!
+        return epochs
+        #print("RED:", self.getNetworkOutput([redXY[0][12],redXY[1][12]]))
+        #print("BLUE:", self.getNetworkOutput([bluXY[0][12],bluXY[1][12]]))
             

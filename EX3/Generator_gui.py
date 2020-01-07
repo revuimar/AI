@@ -21,24 +21,28 @@ BLUE = 1
 color_type = ('ro','bo')
 mean = [[[-5,-5],[5,5]],[[10,10],[-10,-10]]]
 cov = [[[[1, 2], [0.5, 2]],[[1, 2], [0.5, 2]]],[[[1, 0.3], [2, 0.5]],[[1, 2], [5, 6]]]]
-samples = [100,100]
-meshDensity = 10
+samples = [5,5]
+meshDensity = 100
 dataClass = []
-classesNo = [2,2]
+classesNo = [2,5]
 meanRange = [-20,20]
 covRange = (-2,2)
 neuralNetwork = None
 colorbar = None
 grid = None
 function = "sin_func"
-functionTable = ["sig_func","tanh_func","tanh_func"]
-layerCombo = [2,3,2]
+epochs = 100
+
+layerCombo = [2,4,3,2]
+functionTable = [function for i in layerCombo]
+functionPattern = [list(Neuron.Functions.keys()).index(function) for i in layerCombo]
+learning_rate = 0.8
 x = [[],[]]
 y = [[],[]]
 
 def train():
     global neuralNetwork,x,y
-    print("training iter: ",neuralNetwork.train([x[RED],y[RED]],[x[BLUE],y[BLUE]]))
+    print("training iter: ",neuralNetwork.train([x[RED],y[RED]],[x[BLUE],y[BLUE]],epochs))
     
 def drawPlot(ID):
     global mean
@@ -94,13 +98,7 @@ def neuralValorisation(_map):
             table = [_map[0][i,j],_map[1][i,j]]
             outputTable = neuralNetwork.getNetworkOutput(table)
             #print(outputTable)
-            values[i,j] = outputTable[1]
-            '''
-            if(outputTable[0] == outputTable[1]):
-                values[i,j] = outputTable[0]
-            else:
-                values[i,j] = 0.5
-            '''
+            values[i,j] = max(outputTable[0],outputTable[1])
     return values
 
 def drawFieldDiv():
@@ -154,7 +152,7 @@ class Index(object):
         global neuralNetwork
         self.ind +=1
         del neuralNetwork
-        neuralNetwork = NeuralNetwork([2,3,2],functionTable,2)
+        neuralNetwork = NeuralNetwork(2,layerCombo,functionTable,learning_rate)
         initsRegenerate(RED)
         initsRegenerate(BLUE)
         plotDataUpdate(RED)
@@ -169,14 +167,15 @@ class Index(object):
         
 def initGUI():
     #TextBox position variables (matplotlib.axes.Axes)
-    RED_boxAxis = plt.axes([0.55, 0.05, 0.15, 0.05])
-    RED_sampleBoxAxis = plt.axes([0.55, 0.11, 0.15, 0.05])
+    RED_boxAxis = plt.axes([0.60, 0.05, 0.1, 0.05])
+    RED_sampleBoxAxis = plt.axes([0.60, 0.11, 0.10, 0.05])
     BLUE_boxAxis = plt.axes([0.81, 0.05, 0.12, 0.05])
     BLUE_sampleBoxAxis = plt.axes([0.81, 0.11, 0.12, 0.05])
     Funcpattern_boxAxis = plt.axes([0.15, 0.05, 0.30, 0.05])
     Network_boxAxis = plt.axes([0.15, 0.11, 0.15, 0.05])
     meanBoxAxis = plt.axes([0.63, 0.17, 0.12, 0.05])
     Train_boxAxis = plt.axes([0.15, 0.17, 0.15, 0.05])
+    Epoch_boxAxis = plt.axes([0.4, 0.11, 0.10, 0.05])
     #Button position variables (matplotlib.axes.Axes)
     Train_axButton = plt.axes([0.31, 0.17, 0.1, 0.05])
     Reg_axButton = plt.axes([0.78, 0.17, 0.15, 0.05])
@@ -187,6 +186,7 @@ def initGUI():
     Refresh_button = Button(Refresh_axButton, 'Refresh')
     #TextBox text boxes
     
+    Epoch_textBox = TextBox(Epoch_boxAxis, 'Epochs', initial=str(epochs))
     RED_textBox = TextBox(RED_boxAxis, 'Modes\nRED', initial=str(classesNo[RED]))
     RED_textBox.label.set_wrap(True)
     meantextBox = TextBox(meanBoxAxis, 'Mean\nRange', initial=str(meanRange))
@@ -198,7 +198,7 @@ def initGUI():
     BLUE_sampletextBox = TextBox(BLUE_sampleBoxAxis, 'Samples\nBLUE', initial=str(samples[BLUE]))
     BLUE_sampletextBox.label.set_wrap(True)
     Train_TextBox = TextBox(Train_boxAxis, 'Func',initial=str(function))
-    Funcpatt_TextBox = TextBox(Funcpattern_boxAxis, 'Funcion\nPattern',initial=str(functionTable))
+    Funcpatt_TextBox = TextBox(Funcpattern_boxAxis, 'Funcion\nPattern',initial=str(functionPattern))
     Network_TextBox = TextBox(Network_boxAxis, 'Network\nPattern',initial=str(layerCombo))
 
 
@@ -209,6 +209,8 @@ def initGUI():
     RED_sampletextBox.on_submit(lambda value: submitSamples(RED,RED_sampletextBox.text))
     BLUE_sampletextBox.on_submit(lambda value: submitSamples(BLUE,BLUE_sampletextBox.text))
     Train_TextBox.on_submit(setFunction)
+    Network_TextBox.on_submit(setNetworkPattern)
+    Funcpatt_TextBox.on_submit(setFunctionPattern)
     callback = Index()
     Train_button.on_clicked(callback.training)
     Refresh_button.on_clicked(callback.refresh)
@@ -218,8 +220,32 @@ def initGUI():
     return callback
 
 def setFunction(input_string):
-    global function
+    global function,functionTable,neuralNetwork,learning_rate,layerCombo
     function = input_string
+    functionTable = [function for i in layerCombo]
+    del neuralNetwork
+    neuralNetwork = NeuralNetwork(2,layerCombo,functionTable,learning_rate)
+
+def setFunctionPattern(input_string):
+    global functionTable,neuralNetwork,learning_rate,layerCombo
+    try:
+        pattern = eval(input_string)
+    except:
+        print("Parsing Error!")
+        return
+    functionTable = [list(Neuron.Functions.keys())[i] for i in pattern]
+    del neuralNetwork
+    neuralNetwork = NeuralNetwork(2,layerCombo,functionTable,learning_rate)
+
+def setNetworkPattern(input_string):
+    global layerCombo,functionTable,neuralNetwork,learning_rate,layerCombo
+    try:
+        layerCombo = eval(input_string)
+    except:
+        print("Parsing Error!")
+        return
+    del neuralNetwork
+    neuralNetwork = NeuralNetwork(2,layerCombo,functionTable,learning_rate)
 
 def submitNo(ID, input_string):
     newNo = 0
@@ -258,7 +284,7 @@ def submitSamples(ID, input_string):
 if __name__ == '__main__':
     initPlots()
     dataClass = [drawPlot(RED),drawPlot(BLUE)]
-    neuralNetwork = NeuralNetwork([2,3,2],functionTable,2)
+    neuralNetwork = NeuralNetwork(2,layerCombo,functionTable,learning_rate)
     #Neuron([1,1,1],function,[1,1,1],0.1)
     drawFieldDiv()
     initGUI()
