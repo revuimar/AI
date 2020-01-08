@@ -1,10 +1,12 @@
 #search alg
 import math
 import copy
+import numpy as np
 
 maxTruckLoad = 4
 entitiesSupply = {"A":5,"B":3,"C":7}    #define demand
-supplierSupply = {"S":100}#math.inf}         #define supply
+supplierSupply = {"S":500}#math.inf}         #define supply
+totalDemand = np.sum(list(entitiesSupply[item] for item in entitiesSupply))
 isOutOfStock = False
 entityMap = \
     {\
@@ -86,19 +88,26 @@ class Node:
                 #print(newNode.entities,"|truck: ",newNode.truck,"|residing: ",newNode.residence,"|cost: ",newNode.accumulatedCost,"|")
         return expandedNodes
     
-    def findLowestCostIndex(nodeList):
-        cost = math.inf
-        lowestCostNode = None
+    def findBestHeuristicIndex(nodeList):
+        global totalDemand
+        last_left = math.inf
+        lowestHeurNode = None
         for node in nodeList:
-            if(node.accumulatedCost < cost):
-                lowestCostNode = node
-                cost = node.accumulatedCost
-        return nodeList.index(lowestCostNode)
-    
+            current_left = totalDemand - evaluateDemand(node.entities)
+            if(current_left < last_left):
+                lowestHeurNode = node
+                last_left = current_left
+        return nodeList.index(lowestHeurNode)
+
+    def printNode(self):
+        print(self.entities,"|truck: ",self.truck,"|residing: ",self.residence,"|cost: ",self.accumulatedCost,"|")
+
     def printNodes(nodeList):
         for node in nodeList:
-            print(node.entities,"|truck: ",node.truck,"|residing: ",node.residence,"|cost: ",node.accumulatedCost,"|")
+            node.printNode()
 
+def evaluateDemand(demandLeftDict):
+    return np.sum(list(demandLeftDict[item] for item in demandLeftDict))
 
 def blindSearchDFS():
     global entityMap,entitiesSupply,truckLoad
@@ -139,11 +148,16 @@ def blindSearch(mode):
     cost = 0
     queue.append(Node(copy.deepcopy(entitiesSupply),copy.deepcopy(supplierSupply),0,truckResidence,0,[truckResidence]))
     queue[0].loadUp()
+    print("Running search: ",mode)
     while(1):
         current = queue.pop(position)
+        print("selected node")
+        current.printNode()
         if(current._isSupplied()):
-            print("found ",mode," path! ",current.entities,"|Total Cost: ", current.accumulatedCost,"| residence: ", current.residence)
+            print("solved for: ",mode)
+            current.printNode()
             print("Path: ",current.roadHistory)
+            print("Stock status: ",current.supplier,"\n\n\n")
             break
         tmp = Node.expand(current)
         if (isOutOfStock):
@@ -162,12 +176,16 @@ def heuresticSerach():
     cost = 0
     queue.append(Node(copy.deepcopy(entitiesSupply),copy.deepcopy(supplierSupply),0,truckResidence,0,[truckResidence]))
     queue[0].loadUp()
+    print("Running search: heurestic")
     while(1):
-        current = queue.pop(Node.findLowestCostIndex(queue))
-        
+        current = queue.pop(Node.findBestHeuristicIndex(queue))
+        print("selected node")
+        current.printNode()
         if(current._isSupplied()):
-            print("found heurestic path! ",current.entities,"|Total Cost: ", current.accumulatedCost,"| residence: ", current.residence)
+            print("found heurestic path! ")
+            current.printNode()
             print("Path: ",current.roadHistory)
+            print("Stock status: ",current.supplier,"\n\n\n")
             break
         #Node.printNodes(queue)
         #print("expanding -> ",current.entities,"| cost: ",current.accumulatedCost)
