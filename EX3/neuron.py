@@ -79,9 +79,9 @@ class Neuron:
 
     def leaky_relu_func(s,isDerivative):
         if(isDerivative):
-            return 1 if s> 0 else 0.05
+            return 1 if s> 0 else 0.01
         else:
-            return s if s> 0 else (0.05 if s<0.0001 else 0.05*s)
+            return s if s> 0 else 0.01
 
     Functions = {
         "step_func": step_func,

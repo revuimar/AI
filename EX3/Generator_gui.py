@@ -24,19 +24,19 @@ cov = [[[[1, 2], [0.5, 2]],[[1, 2], [0.5, 2]]],[[[1, 0.3], [2, 0.5]],[[1, 2], [5
 samples = [5,5]
 meshDensity = 100
 dataClass = []
-classesNo = [2,5]
+classesNo = [1,5]
 meanRange = [-20,20]
 covRange = (-2,2)
 neuralNetwork = None
 colorbar = None
 grid = None
 function = "sin_func"
-epochs = 100
+epochs = 10
 
 layerCombo = [2,4,3,2]
 functionTable = [function for i in layerCombo]
 functionPattern = [list(Neuron.Functions.keys()).index(function) for i in layerCombo]
-learning_rate = 0.8
+learning_rate = 0.5
 x = [[],[]]
 y = [[],[]]
 
@@ -209,6 +209,7 @@ def initGUI():
     RED_sampletextBox.on_submit(lambda value: submitSamples(RED,RED_sampletextBox.text))
     BLUE_sampletextBox.on_submit(lambda value: submitSamples(BLUE,BLUE_sampletextBox.text))
     Train_TextBox.on_submit(setFunction)
+    Epoch_textBox.on_submit(setEpochs)
     Network_TextBox.on_submit(setNetworkPattern)
     Funcpatt_TextBox.on_submit(setFunctionPattern)
     callback = Index()
@@ -218,6 +219,10 @@ def initGUI():
 
     plt.show()
     return callback
+
+def setEpochs(input_string):
+    global epochs
+    epochs = int(input_string)
 
 def setFunction(input_string):
     global function,functionTable,neuralNetwork,learning_rate,layerCombo
